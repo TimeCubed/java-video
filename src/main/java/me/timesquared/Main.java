@@ -52,6 +52,10 @@ public class Main {
 			
 			File dir;
 			
+			// Source - https://stackoverflow.com/a
+			// Posted by Forcuti Alessandro
+			// Retrieved 2025-12-26, License - CC BY-SA 3.0
+			UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel");
 			JFileChooser fileChooser = new JFileChooser();
 			fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 			
@@ -70,6 +74,9 @@ public class Main {
 						JOptionPane.ERROR_MESSAGE
 				);
 				
+				// just why do I have to do this intellij?
+				// why are you being annoying lol
+				System.exit(-1);
 				return;
 			}
 			
