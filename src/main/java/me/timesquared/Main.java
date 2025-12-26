@@ -8,6 +8,7 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.util.Objects;
 
 import static com.xuggle.xuggler.Global.DEFAULT_TIME_UNIT;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -45,9 +46,44 @@ public class Main {
 			writer.addVideoStream(videoStreamIndex, videoStreamId, width, height);
 			//writer.addAudioStream(audioStreamIndex, audioStreamId, channelCount, sampleRate);
 			
-			File dir = new File("g:/ml_training/rubber_duck");
+			File dir;
 			
-			for (File f : dir.listFiles()) {
+			JFileChooser fileChooser = new JFileChooser();
+			fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+			
+			int returnVal = fileChooser.showOpenDialog(null);
+			
+			if (returnVal == JFileChooser.APPROVE_OPTION) {
+				dir = fileChooser.getSelectedFile();
+			} else {
+				JOptionPane.showMessageDialog(
+						null,
+						"""
+								You must choose a directory that contains some image files
+								to render into a finalized video file.
+								""",
+						"No directory selected",
+						JOptionPane.ERROR_MESSAGE
+				);
+				
+				return;
+			}
+			
+			if (dir.listFiles() == null) {
+				JOptionPane.showMessageDialog(
+						null,
+						"""
+								The directory you choose must contain image files to convert.
+								""",
+						"Directory is empty",
+						JOptionPane.ERROR_MESSAGE
+				);
+				
+				return;
+			}
+			
+			// intellij being annoying :(
+			for (File f : Objects.requireNonNull(dir.listFiles())) {
 				BufferedImage frame = ImageIO.read(f);
 				writer.encodeVideo(videoStreamIndex, frame, nextFrameTime, DEFAULT_TIME_UNIT);
 				nextFrameTime += frameRate;
