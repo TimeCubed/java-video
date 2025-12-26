@@ -10,7 +10,6 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.util.Objects;
 
 import static com.xuggle.xuggler.Global.DEFAULT_TIME_UNIT;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -26,8 +25,8 @@ public class Main {
 		final int videoStreamIndex = 0;
 		final int videoStreamId = 0;
 		final long frameRate = DEFAULT_TIME_UNIT.convert(500, MILLISECONDS);
-		final int width = 320;
-		final int height = 200;
+		final int width = 600;
+		final int height = 400;
 		
 		// audio parameters (unused)
 //		final int audioStreamIndex = 1;
@@ -76,9 +75,9 @@ public class Main {
 						JOptionPane.ERROR_MESSAGE
 				);
 				
-				// just why do I have to do this intellij?
-				// why are you being annoying lol
 				System.exit(-1);
+				// just why do I have to do this intellij? exit already stops everything
+				// why are you being annoying lol
 				return;
 			}
 			
@@ -92,13 +91,28 @@ public class Main {
 						JOptionPane.ERROR_MESSAGE
 				);
 				
+				System.exit(-1);
 				return;
 			}
 			
-			// intellij being annoying :(
-			for (File f : Objects.requireNonNull(dir.listFiles())) {
-				BufferedImage frame = ImageIO.read(f);
-				writer.encodeVideo(videoStreamIndex, frame, nextFrameTime, DEFAULT_TIME_UNIT);
+			File[] files = dir.listFiles();
+			
+			// intellij annoying me again :/
+			// this shouldn't be null intellij, you know that already
+			assert files != null;
+			for (File file : files) {
+				BufferedImage frame = ImageIO.read(file);
+				
+				// sucks that I have to do this but whatever
+				// xuggler doesn't like the type of BufferedImage ImageIO.read() is spitting out,
+				// so I have to convert it to another type (specifically 3BYTE_BGR)
+				// thanks stackoverflow yet again!
+				// https://stackoverflow.com/questions/8327847/cant-encode-video-with-xuggler
+				// https://stackoverflow.com/questions/8194080/converting-a-bufferedimage-to-another-type
+				BufferedImage convertedFrame = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
+				convertedFrame.getGraphics().drawImage(frame, 0, 0, null);
+				
+				writer.encodeVideo(videoStreamIndex, convertedFrame, nextFrameTime, DEFAULT_TIME_UNIT);
 				nextFrameTime += frameRate;
 
 				// for audio, currently unused
@@ -106,10 +120,22 @@ public class Main {
 //				writer.encodeAudio(audioStreamIndex, samples, clock, DEFAULT_TIME_UNIT);
 //				totalSampleCount += sampleCount;
 			}
-			writer.close();
 			
+			// for whatever reason, xuggler isn't actually keeping the final frame of
+			// video up for very long, so I'm drawing the final frame of video again
+			// to hopefully counteract this issue.
+			BufferedImage finalFrame = ImageIO.read(files[files.length - 1]);
+			
+			BufferedImage convertedFrame = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
+			convertedFrame.getGraphics().drawImage(finalFrame, 0, 0, null);
+			
+			writer.encodeVideo(videoStreamIndex, convertedFrame, nextFrameTime, DEFAULT_TIME_UNIT);
+			
+			writer.close();
 		} catch (Exception e) {
-			log.error("", e);
+			log.error("exception occurred", e);
+			
+			System.exit(1);
 		}
 	}
 }
