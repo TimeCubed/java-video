@@ -1,5 +1,6 @@
 package me.timesquared;
 
+import com.formdev.flatlaf.FlatDarculaLaf;
 import com.xuggle.mediatool.IMediaViewer;
 import com.xuggle.mediatool.IMediaWriter;
 import com.xuggle.mediatool.ToolFactory;
@@ -36,10 +37,15 @@ public class Main {
 //		final int sampleCount = 1000;
 		
 		try {
-			// Source - https://stackoverflow.com/a
-			// Posted by Forcuti Alessandro
-			// Retrieved 2025-12-26, License - CC BY-SA 3.0
-			UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel");
+			// code snippet from FormDev's FlatLaf getting started section
+			// https://www.formdev.com/flatlaf/#getting_started
+			try {
+				UIManager.setLookAndFeel(new FlatDarculaLaf());
+			} catch (Exception e) {
+				log.error("failed to set look and feel", e);
+				
+				System.exit(1);
+			}
 			
 			// not stackoverflow anymore, but this still isn't actually my code
 			final IMediaWriter writer = ToolFactory.makeWriter("test.mov");
