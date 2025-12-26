@@ -37,6 +37,12 @@ public class Main {
 //		final int sampleCount = 1000;
 		
 		try {
+			// Source - https://stackoverflow.com/a
+			// Posted by Forcuti Alessandro
+			// Retrieved 2025-12-26, License - CC BY-SA 3.0
+			UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel");
+			
+			// not stackoverflow anymore, but this still isn't actually my code
 			final IMediaWriter writer = ToolFactory.makeWriter("test.mov");
 			
 			writer.addListener(
@@ -52,10 +58,6 @@ public class Main {
 			
 			File dir;
 			
-			// Source - https://stackoverflow.com/a
-			// Posted by Forcuti Alessandro
-			// Retrieved 2025-12-26, License - CC BY-SA 3.0
-			UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel");
 			JFileChooser fileChooser = new JFileChooser();
 			fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 			
