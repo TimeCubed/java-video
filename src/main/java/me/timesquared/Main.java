@@ -6,8 +6,11 @@ import com.xuggle.mediatool.IMediaWriter;
 import com.xuggle.mediatool.ToolFactory;
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
+import java.nio.Buffer;
 
 import static com.xuggle.xuggler.Global.DEFAULT_TIME_UNIT;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -42,112 +45,187 @@ public class Main {
 //		final int sampleRate = 44100; // Hz
 //		final int sampleCount = 1000;
 		
+		// code snippet from FormDev's FlatLaf getting started section
+		// https://www.formdev.com/flatlaf/#getting_started
 		try {
-			// code snippet from FormDev's FlatLaf getting started section
-			// https://www.formdev.com/flatlaf/#getting_started
-			try {
-				UIManager.setLookAndFeel(new FlatDarculaLaf());
-			} catch (Exception e) {
-				e.printStackTrace();
-				
-				System.exit(1);
-			}
-			
-			// not stackoverflow anymore, but this still isn't actually my code
-			final IMediaWriter writer = ToolFactory.makeWriter("test.mov");
-			
-			writer.addListener(
-					ToolFactory.makeViewer(
-							IMediaViewer.Mode.VIDEO_ONLY,
-							true,
-							javax.swing.WindowConstants.EXIT_ON_CLOSE
-					)
-			);
-			
-			writer.addVideoStream(videoStreamIndex, videoStreamId, width, height);
-			//writer.addAudioStream(audioStreamIndex, audioStreamId, channelCount, sampleRate);
-			
-			File dir;
-			
-			JFileChooser fileChooser = new JFileChooser();
-			fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-			
-			int returnVal = fileChooser.showOpenDialog(null);
-			
-			if (returnVal == JFileChooser.APPROVE_OPTION) {
-				dir = fileChooser.getSelectedFile();
-			} else {
-				JOptionPane.showMessageDialog(
-						null,
-						"""
-								You must choose a directory that contains some image files
-								to render into a finalized video file.
-								""",
-						"No directory selected",
-						JOptionPane.ERROR_MESSAGE
-				);
-				
-				System.exit(-1);
-				// just why do I have to do this intellij? exit already stops everything
-				// why are you being annoying lol
-				return;
-			}
-			
-			if (dir.listFiles() == null) {
-				JOptionPane.showMessageDialog(
-						null,
-						"""
-								The directory you choose must contain image files to convert.
-								""",
-						"Directory is empty",
-						JOptionPane.ERROR_MESSAGE
-				);
-				
-				System.exit(-1);
-				return;
-			}
-			
-			File[] files = dir.listFiles();
-			
-			// intellij annoying me again :/
-			// this shouldn't be null intellij, you know that already
-			assert files != null;
-			for (File file : files) {
-				BufferedImage frame = ImageIO.read(file);
-				
-				// sucks that I have to do this but whatever
-				// xuggler doesn't like the type of BufferedImage ImageIO.read() is spitting out,
-				// so I have to convert it to another type (specifically 3BYTE_BGR)
-				// thanks stackoverflow yet again!
-				// https://stackoverflow.com/questions/8327847/cant-encode-video-with-xuggler
-				// https://stackoverflow.com/questions/8194080/converting-a-bufferedimage-to-another-type
-				BufferedImage convertedFrame = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
-				convertedFrame.getGraphics().drawImage(frame, 0, 0, null);
-				
-				writer.encodeVideo(videoStreamIndex, convertedFrame, nextFrameTime, DEFAULT_TIME_UNIT);
-				nextFrameTime += frameRate;
-
-				// for audio, currently unused
-//				short[] samples = new short[];
-//				writer.encodeAudio(audioStreamIndex, samples, clock, DEFAULT_TIME_UNIT);
-//				totalSampleCount += sampleCount;
-			}
-			
-			// for whatever reason, xuggler isn't actually keeping the final frame of
-			// video up for very long, so I'm drawing the final frame of video again
-			// to hopefully counteract this issue.
-			BufferedImage finalFrame = ImageIO.read(files[files.length - 1]);
-			
-			BufferedImage convertedFrame = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
-			convertedFrame.getGraphics().drawImage(finalFrame, 0, 0, null);
-			
-			writer.encodeVideo(videoStreamIndex, convertedFrame, nextFrameTime, DEFAULT_TIME_UNIT);
-			
-			writer.close();
+			UIManager.setLookAndFeel(new FlatDarculaLaf());
 		} catch (Exception e) {
 			e.printStackTrace();
 			
 			System.exit(1);
 		}
+		
+		final IMediaWriter writer = ToolFactory.makeWriter("test.mov");
+		
+		writer.addListener(
+				ToolFactory.makeViewer(
+						IMediaViewer.Mode.VIDEO_ONLY,
+						true,
+						javax.swing.WindowConstants.EXIT_ON_CLOSE
+				)
+		);
+		
+		writer.addVideoStream(videoStreamIndex, videoStreamId, width, height);
+		//writer.addAudioStream(audioStreamIndex, audioStreamId, channelCount, sampleRate);
+		
+		File dir;
+		
+		JFileChooser fileChooser = new JFileChooser();
+		fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+		
+		int returnVal;
+		
+		try {
+			returnVal = fileChooser.showOpenDialog(null);
+		} catch (HeadlessException e) {
+			System.out.println("running in a headless graphics environment");
+			e.printStackTrace();
+			
+			writer.close();
+			
+			System.exit(-1);
+			return;
+		}
+		
+		if (returnVal == JFileChooser.APPROVE_OPTION) {
+			dir = fileChooser.getSelectedFile();
+		} else {
+			// I don't think I *have* to put any try/catch blocks here because
+			// we already checked for a headless environment literally less than
+			// 10 lines ago, soo..
+			JOptionPane.showMessageDialog(
+					null,
+					"""
+							You must choose a directory that contains some image files
+							to render into a finalized video file.
+							""",
+					"No directory selected",
+					JOptionPane.ERROR_MESSAGE
+			);
+			
+			writer.close();
+			
+			System.exit(-1);
+			return;
+		}
+		
+		File[] files;
+		
+		try {
+			files = dir.listFiles();
+		} catch (SecurityException e) {
+			System.out.println("no read access to '" + dir.getName() + "'");
+			e.printStackTrace();
+			
+			writer.close();
+			
+			System.exit(-1);
+			return;
+		}
+		
+		if (files == null) {
+			JOptionPane.showMessageDialog(
+					null,
+					"""
+							Directory does not exist.
+							""",
+					"Unknown directory",
+					JOptionPane.ERROR_MESSAGE
+			);
+			
+			writer.close();
+			
+			System.exit(-1);
+			return;
+		}
+		
+		if (files.length == 0) {
+			JOptionPane.showMessageDialog(
+					null,
+					"""
+							The directory you choose must contain image files to convert.
+							""",
+					"Directory is empty",
+					JOptionPane.ERROR_MESSAGE
+			);
+			
+			writer.close();
+			
+			System.exit(-1);
+			return;
+		}
+		
+		for (File file : files) {
+			BufferedImage frame;
+			
+			try {
+				frame = ImageIO.read(file);
+			} catch (IllegalArgumentException e) {
+				System.out.println("this shouldn't have happened, but somehow it did");
+				e.printStackTrace();
+				
+				writer.close();
+				
+				System.exit(-1);
+				return;
+			} catch (IOException e) {
+				System.out.println("couldn't read file '" + file.getName() + "'");
+				e.printStackTrace();
+				
+				writer.close();
+				
+				System.exit(-1);
+				return;
+			}
+			
+			// sucks that I have to do this but whatever
+			// xuggler doesn't like the type of BufferedImage ImageIO.read() is spitting out,
+			// so I have to convert it to another type (specifically 3BYTE_BGR)
+			// thanks stackoverflow yet again!
+			// https://stackoverflow.com/questions/8327847/cant-encode-video-with-xuggler
+			// https://stackoverflow.com/questions/8194080/converting-a-bufferedimage-to-another-type
+			BufferedImage convertedFrame = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
+			convertedFrame.getGraphics().drawImage(frame, 0, 0, null);
+			
+			writer.encodeVideo(videoStreamIndex, convertedFrame, nextFrameTime, DEFAULT_TIME_UNIT);
+			nextFrameTime += frameRate;
+
+			// for audio, currently unused
+//			short[] samples = new short[];
+//			writer.encodeAudio(audioStreamIndex, samples, clock, DEFAULT_TIME_UNIT);
+//			totalSampleCount += sampleCount;
+		}
+		
+		// for whatever reason, xuggler isn't actually keeping the final frame of
+		// video up for very long, so I'm drawing the final frame of video again
+		// to hopefully counteract this issue.
+		BufferedImage finalFrame;
+		
+		try {
+			finalFrame = ImageIO.read(files[files.length - 1]);
+		} catch (IllegalArgumentException e) {
+			System.out.println("this shouldn't have happened, but somehow it did");
+			e.printStackTrace();
+			
+			writer.close();
+			
+			System.exit(-1);
+			return;
+		} catch (IOException e) {
+			System.out.println("couldn't read file '" + files[files.length - 1].getName() + "'");
+			e.printStackTrace();
+			
+			writer.close();
+			
+			System.exit(-1);
+			return;
+		}
+		
+		BufferedImage convertedFrame = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
+		convertedFrame.getGraphics().drawImage(finalFrame, 0, 0, null);
+		
+		writer.encodeVideo(videoStreamIndex, convertedFrame, nextFrameTime, DEFAULT_TIME_UNIT);
+		
+		writer.close();
 	}
 }
