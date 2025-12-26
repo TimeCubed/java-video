@@ -3,6 +3,8 @@ package me.timesquared;
 import com.xuggle.mediatool.IMediaViewer;
 import com.xuggle.mediatool.IMediaWriter;
 import com.xuggle.mediatool.ToolFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -14,6 +16,8 @@ import static com.xuggle.xuggler.Global.DEFAULT_TIME_UNIT;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class Main {
+	private static final Logger log = LoggerFactory.getLogger(Main.class);
+	
 	public static void main(String[] args) {
 		// the clock time of the next frame
 		long nextFrameTime = 0;
@@ -96,7 +100,7 @@ public class Main {
 			writer.close();
 			
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.error("", e);
 		}
 	}
 }
