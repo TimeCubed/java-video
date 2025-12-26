@@ -35,6 +35,7 @@ public class Main {
 		// detect if a directory has more than just plain images, or images with different types
 		// (like a mix of pngs and jpgs for example) and alerting the user to those kinds of
 		// things and asking them what they'd want to do next.
+		// also, probably should add an "output file" option too in that window.
 		final long frameRate = DEFAULT_TIME_UNIT.convert(500, MILLISECONDS);
 		final int width = 600;
 		final int height = 400;
