@@ -12,18 +12,22 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static com.xuggle.xuggler.Global.DEFAULT_TIME_UNIT;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class Main {
+	private static final Logger logger = Logger.getLogger(Main.class.getName());
+	
 	public static void main(String[] args) {
 		// code snippet from FormDev's FlatLaf getting started section
 		// https://www.formdev.com/flatlaf/#getting_started
 		try {
 			UIManager.setLookAndFeel(new FlatDarculaLaf());
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.log(Level.SEVERE, "failed to set look and feel", e);
 			
 			System.exit(1);
 		}
@@ -77,16 +81,14 @@ public class Main {
 			try {
 				frame = ImageIO.read(file);
 			} catch (IllegalArgumentException e) {
-				System.out.println("this shouldn't have happened, but somehow it did");
-				e.printStackTrace();
+				logger.log(Level.SEVERE, "this shouldn't have happened but somehow it did", e);
 				
 				writer.close();
 				
 				System.exit(-1);
 				return;
 			} catch (IOException e) {
-				System.out.println("couldn't read file '" + file.getName() + "'");
-				e.printStackTrace();
+				logger.log(Level.SEVERE, "couldn't read file '" + file.getName() + "'", e);
 				
 				writer.close();
 				
@@ -120,16 +122,14 @@ public class Main {
 		try {
 			finalFrame = ImageIO.read(inputFiles.getLast());
 		} catch (IllegalArgumentException e) {
-			System.out.println("this shouldn't have happened, but somehow it did");
-			e.printStackTrace();
+			logger.log(Level.SEVERE, "this shouldn't have happened but somehow it did", e);
 			
 			writer.close();
 			
 			System.exit(-1);
 			return;
 		} catch (IOException e) {
-			System.out.println("couldn't read file '" + inputFiles.getLast().getName() + "'");
-			e.printStackTrace();
+			logger.log(Level.SEVERE, "couldn't read file '" + inputFiles.getLast().getName() + "'", e);
 			
 			writer.close();
 			
