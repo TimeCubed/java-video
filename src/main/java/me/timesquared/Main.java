@@ -7,22 +7,27 @@ import com.xuggle.mediatool.ToolFactory;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.nio.Buffer;
+import java.util.List;
 
 import static com.xuggle.xuggler.Global.DEFAULT_TIME_UNIT;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class Main {
 	public static void main(String[] args) {
-		// the clock time of the next frame
-		long nextFrameTime = 0;
-		
-		// video parameters
-		final int videoStreamIndex = 0;
-		final int videoStreamId = 0;
+		// code snippet from FormDev's FlatLaf getting started section
+		// https://www.formdev.com/flatlaf/#getting_started
+		try {
+			UIManager.setLookAndFeel(new FlatDarculaLaf());
+		} catch (Exception e) {
+			e.printStackTrace();
+			
+			System.exit(1);
+		}
 		
 		// TODO: probably make some kind of setup window to specify these options
 		// like using a JFrame or something to set these values instead of hardcoding all of them
@@ -34,10 +39,22 @@ public class Main {
 		// (like a mix of pngs and jpgs for example) and alerting the user to those kinds of
 		// things and asking them what they'd want to do next.
 		// also, probably should add an "output file" option too in that window.
-		final long frameRate = DEFAULT_TIME_UNIT.convert(500, MILLISECONDS);
-		final int width = 600;
-		final int height = 400;
 		
+		SetupWindow setupWindow = new SetupWindow("Video tool");
+		setupWindow.pack();
+		
+		setupWindow.setVisible(true);
+		
+		setupWindow.addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosing(WindowEvent e)
+			{
+				System.exit(0);
+			}
+		});
+	}
+	
+	public static void createVideo(long frameRate, int width, int height, List<File> inputFiles, File outputFile) {
 		// audio parameters (unused)
 //		final int audioStreamIndex = 1;
 //		final int audioStreamId = 0;
@@ -45,17 +62,7 @@ public class Main {
 //		final int sampleRate = 44100; // Hz
 //		final int sampleCount = 1000;
 		
-		// code snippet from FormDev's FlatLaf getting started section
-		// https://www.formdev.com/flatlaf/#getting_started
-		try {
-			UIManager.setLookAndFeel(new FlatDarculaLaf());
-		} catch (Exception e) {
-			e.printStackTrace();
-			
-			System.exit(1);
-		}
-		
-		final IMediaWriter writer = ToolFactory.makeWriter("test.mov");
+		final IMediaWriter writer = ToolFactory.makeWriter(outputFile.getAbsolutePath());
 		
 		writer.addListener(
 				ToolFactory.makeViewer(
@@ -65,97 +72,18 @@ public class Main {
 				)
 		);
 		
+		final int videoStreamIndex = 0;
+		final int videoStreamId = 0;
+		
 		writer.addVideoStream(videoStreamIndex, videoStreamId, width, height);
 		//writer.addAudioStream(audioStreamIndex, audioStreamId, channelCount, sampleRate);
 		
-		File dir;
+		frameRate = DEFAULT_TIME_UNIT.convert((1 / frameRate) * 1000, MILLISECONDS);
 		
-		JFileChooser fileChooser = new JFileChooser();
-		fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+		// the clock time of the next frame
+		long nextFrameTime = 0;
 		
-		int returnVal;
-		
-		try {
-			returnVal = fileChooser.showOpenDialog(null);
-		} catch (HeadlessException e) {
-			System.out.println("running in a headless graphics environment");
-			e.printStackTrace();
-			
-			writer.close();
-			
-			System.exit(-1);
-			return;
-		}
-		
-		if (returnVal == JFileChooser.APPROVE_OPTION) {
-			dir = fileChooser.getSelectedFile();
-		} else {
-			// I don't think I *have* to put any try/catch blocks here because
-			// we already checked for a headless environment literally less than
-			// 10 lines ago, soo..
-			JOptionPane.showMessageDialog(
-					null,
-					"""
-							You must choose a directory that contains some image files
-							to render into a finalized video file.
-							""",
-					"No directory selected",
-					JOptionPane.ERROR_MESSAGE
-			);
-			
-			writer.close();
-			
-			System.exit(-1);
-			return;
-		}
-		
-		File[] files;
-		
-		try {
-			files = dir.listFiles();
-		} catch (SecurityException e) {
-			System.out.println("no read access to '" + dir.getName() + "'");
-			e.printStackTrace();
-			
-			writer.close();
-			
-			System.exit(-1);
-			return;
-		}
-		
-		if (files == null) {
-			JOptionPane.showMessageDialog(
-					null,
-					"""
-							Directory does not exist.
-							""",
-					"Unknown directory",
-					JOptionPane.ERROR_MESSAGE
-			);
-			
-			writer.close();
-			
-			System.exit(-1);
-			return;
-		}
-		
-		if (files.length == 0) {
-			JOptionPane.showMessageDialog(
-					null,
-					"""
-							The directory you choose must contain image files to convert.
-							""",
-					"Directory is empty",
-					JOptionPane.ERROR_MESSAGE
-			);
-			
-			writer.close();
-			
-			System.exit(-1);
-			return;
-		}
-		
-		for (File file : files) {
+		for (File file : inputFiles) {
 			BufferedImage frame;
 			
 			try {
@@ -189,7 +117,7 @@ public class Main {
 			
 			writer.encodeVideo(videoStreamIndex, convertedFrame, nextFrameTime, DEFAULT_TIME_UNIT);
 			nextFrameTime += frameRate;
-
+			
 			// for audio, currently unused
 //			short[] samples = new short[];
 //			writer.encodeAudio(audioStreamIndex, samples, clock, DEFAULT_TIME_UNIT);
@@ -202,7 +130,7 @@ public class Main {
 		BufferedImage finalFrame;
 		
 		try {
-			finalFrame = ImageIO.read(files[files.length - 1]);
+			finalFrame = ImageIO.read(inputFiles.getLast());
 		} catch (IllegalArgumentException e) {
 			System.out.println("this shouldn't have happened, but somehow it did");
 			e.printStackTrace();
@@ -212,7 +140,7 @@ public class Main {
 			System.exit(-1);
 			return;
 		} catch (IOException e) {
-			System.out.println("couldn't read file '" + files[files.length - 1].getName() + "'");
+			System.out.println("couldn't read file '" + inputFiles.getLast().getName() + "'");
 			e.printStackTrace();
 			
 			writer.close();
@@ -227,5 +155,7 @@ public class Main {
 		writer.encodeVideo(videoStreamIndex, convertedFrame, nextFrameTime, DEFAULT_TIME_UNIT);
 		
 		writer.close();
+		
+		System.exit(0);
 	}
 }
