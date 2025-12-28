@@ -246,6 +246,16 @@ public class SetupWindow extends JFrame {
 		this.pack();
 	}
 	
+	private JButton createBrowseButton(ActionListener actionListener) {
+		JButton browseButton = new JButton("Browse");
+		browseButton.addActionListener(actionListener);
+		return browseButton;
+	}
+	
+	private boolean isImageFile(String extension) {
+		return extension.equals("jpg") || extension.equals("jpeg") || extension.equals("png") || extension.equals("bmp");
+	}
+	
 	private boolean validateOutputFile() {
 		if (outputFile == null) {
 			JOptionPane.showMessageDialog(
@@ -305,16 +315,6 @@ public class SetupWindow extends JFrame {
 		return true;
 	}
 	
-	private JButton createBrowseButton(ActionListener actionListener) {
-		JButton browseButton = new JButton("Browse");
-		browseButton.addActionListener(actionListener);
-		return browseButton;
-	}
-	
-	private boolean isImageFile(String extension) {
-		return extension.equals("jpg") || extension.equals("jpeg") || extension.equals("png") || extension.equals("bmp");
-	}
-	
 	private boolean validateInputDirectory() {
 		if (inputDirectory == null || !inputDirectory.exists()) {
 			JOptionPane.showMessageDialog(
@@ -346,6 +346,7 @@ public class SetupWindow extends JFrame {
 		
 		boolean showMultipleExtensionsDialog = true;
 		boolean showUnsupportedExtensionDialog = true;
+		boolean showUnreadableFileDialog = true;
 		String firstFileExtension = "";
 		
 		for (File file : files) {
@@ -375,6 +376,32 @@ public class SetupWindow extends JFrame {
 				
 				if (returnVal == JOptionPane.OK_OPTION) {
 					showUnsupportedExtensionDialog = false;
+					
+					continue;
+				}
+				
+				return false;
+			}
+			
+			if (!file.canRead()) {
+				if (!showUnreadableFileDialog) {
+					continue;
+				}
+				
+				int returnVal = JOptionPane.showConfirmDialog(
+						null,
+						"""
+								A file without read permissions was found. As these files can't
+								be read, they will be skipped when creating the video.
+								Continue?
+								""",
+						"Unsupported file found",
+						JOptionPane.OK_CANCEL_OPTION,
+						JOptionPane.WARNING_MESSAGE
+				);
+				
+				if (returnVal == JOptionPane.OK_OPTION) {
+					showUnreadableFileDialog = false;
 					
 					continue;
 				}
