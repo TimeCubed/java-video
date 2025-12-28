@@ -2,12 +2,15 @@ package me.timesquared;
 
 import org.apache.commons.io.FilenameUtils;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -219,8 +222,11 @@ public class SetupWindow extends JFrame {
 		createButton.addActionListener(e -> {
 			// framerate, video width and video height don't need to get validated,
 			// since they already have restrictions on them from the SpinnerNumberModels.
+			int frameRate = (int) frameRateSpinner.getValue();
+			int videoWidth = (int) videoWidthSpinner.getValue();
+			int videoHeight = (int) videoHeightSpinner.getValue();
 			
-			if (!validateInputDirectory()) {
+			if (!validateInputDirectory(videoWidth, videoHeight)) {
 				return;
 			}
 			
@@ -230,7 +236,7 @@ public class SetupWindow extends JFrame {
 			
 			this.setVisible(false);
 			
-			Main.createVideo((int) frameRateSpinner.getValue(), (int) videoWidthSpinner.getValue(), (int) videoHeightSpinner.getValue(), inputFiles, outputFile);
+			Main.createVideo(frameRate, videoWidth, videoHeight, inputFiles, outputFile);
 		});
 		buttonBar.add(createButton);
 		
@@ -315,7 +321,7 @@ public class SetupWindow extends JFrame {
 		return true;
 	}
 	
-	private boolean validateInputDirectory() {
+	private boolean validateInputDirectory(int videoWidth, int videoHeight) {
 		if (inputDirectory == null || !inputDirectory.exists()) {
 			JOptionPane.showMessageDialog(
 					null,
@@ -347,6 +353,8 @@ public class SetupWindow extends JFrame {
 		boolean showMultipleExtensionsDialog = true;
 		boolean showUnsupportedExtensionDialog = true;
 		boolean showUnreadableFileDialog = true;
+		boolean showMismatchedResolutionDialog = true;
+		
 		String firstFileExtension = "";
 		
 		for (File file : files) {
@@ -395,7 +403,7 @@ public class SetupWindow extends JFrame {
 								they will be skipped when creating the video.
 								Continue?
 								""",
-						"Unsupported file found",
+						"Unreadable file",
 						JOptionPane.OK_CANCEL_OPTION,
 						JOptionPane.WARNING_MESSAGE
 				);
@@ -407,6 +415,60 @@ public class SetupWindow extends JFrame {
 				}
 				
 				return false;
+			}
+			
+			BufferedImage image;
+			
+			try {
+				image = ImageIO.read(file);
+			} catch (IOException e) {
+				if (!showUnreadableFileDialog) {
+					continue;
+				}
+				
+				int returnVal = JOptionPane.showConfirmDialog(
+						null,
+						"The file '" + file.getName() + "' could not be read as an image. As it can't be\n"
+						+ "read as an image, this file (and other files like it) will be skipped, alongside any files\n"
+						+ "without read permissions.\n"
+						+ "Continue?",
+						"Unreadable file",
+						JOptionPane.OK_CANCEL_OPTION,
+						JOptionPane.WARNING_MESSAGE
+				);
+				
+				if (returnVal == JOptionPane.OK_OPTION) {
+					showUnreadableFileDialog = false;
+					
+					continue;
+				}
+				
+				return false;
+			}
+			
+			if (image.getWidth() != videoWidth || image.getHeight() != videoHeight) {
+				if (!showMismatchedResolutionDialog) {
+					continue;
+				}
+				
+				int returnVal = JOptionPane.showConfirmDialog(
+						null,
+						"An image file was found that doesn't match your selected video resolution.\n"
+						+ "(file: '" + file.getName() + "', resolution: " + image.getWidth() + "x" + image.getHeight() + " compared to selected resolution of " + videoWidth + "x" + videoHeight + "\n"
+						+ "This is unsupported, and as such this file (and any others) will be skipped.\n"
+						+ "Continue?",
+						"File has mismatching resolution",
+						JOptionPane.OK_CANCEL_OPTION,
+						JOptionPane.WARNING_MESSAGE
+				);
+				
+				if (returnVal == JOptionPane.YES_OPTION) {
+					showMismatchedResolutionDialog = false;
+					
+					continue;
+				} else if (returnVal == JOptionPane.CANCEL_OPTION) {
+					return false;
+				}
 			}
 			
 			if (firstFileExtension.isEmpty()) {
@@ -437,6 +499,21 @@ public class SetupWindow extends JFrame {
 			}
 			
 			inputFiles.add(file);
+		}
+		
+		if (inputFiles.isEmpty()) {
+			JOptionPane.showMessageDialog(
+					null,
+					"""
+							After validating all files in the selected directory, none were
+							found to be valid. Please choose a directory containing valid files
+							or adjust your video settings.
+							""",
+					"No valid files found",
+					JOptionPane.ERROR_MESSAGE
+			);
+			
+			return false;
 		}
 		
 		return true;
