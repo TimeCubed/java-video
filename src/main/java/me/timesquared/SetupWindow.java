@@ -192,7 +192,13 @@ public class SetupWindow extends JFrame {
 			int returnVal = directoryChooser.showSaveDialog(this.getParent());
 			
 			if (returnVal == JFileChooser.APPROVE_OPTION) {
-				this.outputFile = directoryChooser.getSelectedFile();
+				File selectedFile = directoryChooser.getSelectedFile();
+				
+				if (FilenameUtils.getExtension(selectedFile.getName()).isEmpty()) {
+					this.outputFile = new File(selectedFile.getAbsolutePath() + ".mov");
+				} else {
+					this.outputFile = selectedFile;
+				}
 				
 				outputFilePathField.setText(this.outputFile.getAbsolutePath());
 			}
