@@ -121,7 +121,7 @@ public class SetupWindow extends JFrame {
 		gbc.gridx = 3;
 		gbc.gridy = 0;
 		gbc.gridwidth = 1;
-		gbc.weightx = 1;
+		gbc.weightx = 0;
 		
 		JButton browseButton = createBrowseButton(e -> {
 			JFileChooser directoryChooser = new JFileChooser();
@@ -142,6 +142,7 @@ public class SetupWindow extends JFrame {
 		
 		gbc.gridx = 2;
 		gbc.gridy = 1;
+		gbc.weightx = 1;
 		
 		configurationPanel.add(inputDirectorySelectorPanel, gbc);
 		
@@ -170,7 +171,7 @@ public class SetupWindow extends JFrame {
 		gbc.gridx = 2;
 		gbc.gridy = 0;
 		gbc.gridwidth = 1;
-		gbc.weightx = 1;
+		gbc.weightx = 0;
 		
 		JButton outputFileBrowseButton = createBrowseButton(e -> {
 			JFileChooser directoryChooser = new JFileChooser();
@@ -200,6 +201,7 @@ public class SetupWindow extends JFrame {
 		
 		gbc.gridx = 2;
 		gbc.gridy = 4;
+		gbc.weightx = 1;
 		
 		configurationPanel.add(outputFileSelectorPanel, gbc);
 		
