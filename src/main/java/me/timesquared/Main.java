@@ -6,7 +6,6 @@ import com.xuggle.mediatool.IMediaWriter;
 import com.xuggle.mediatool.ToolFactory;
 import javax.imageio.ImageIO;
 import javax.swing.*;
-import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
@@ -28,17 +27,6 @@ public class Main {
 			
 			System.exit(1);
 		}
-		
-		// TODO: probably make some kind of setup window to specify these options
-		// like using a JFrame or something to set these values instead of hardcoding all of them
-		// maybe also use the JFrame to select the directory
-		// --
-		// this would also be useful to validate inputs and instead of just outright exiting if
-		// you don't select a directory/select an empty directory, and also adding some code to
-		// detect if a directory has more than just plain images, or images with different types
-		// (like a mix of pngs and jpgs for example) and alerting the user to those kinds of
-		// things and asking them what they'd want to do next.
-		// also, probably should add an "output file" option too in that window.
 		
 		SetupWindow setupWindow = new SetupWindow("Video tool");
 		setupWindow.pack();

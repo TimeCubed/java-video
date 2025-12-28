@@ -229,9 +229,7 @@ public class SetupWindow extends JFrame {
 		buttonBar.add(createButton);
 		
 		JButton cancelButton = new JButton("Cancel");
-		cancelButton.addActionListener(e -> {
-			System.exit(0);
-		});
+		cancelButton.addActionListener(e -> System.exit(0));
 		buttonBar.add(cancelButton);
 		
 		dialogPanel.add(buttonBar, BorderLayout.SOUTH);
