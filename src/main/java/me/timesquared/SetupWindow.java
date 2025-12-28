@@ -391,8 +391,8 @@ public class SetupWindow extends JFrame {
 				int returnVal = JOptionPane.showConfirmDialog(
 						null,
 						"""
-								A file without read permissions was found. As these files can't
-								be read, they will be skipped when creating the video.
+								A file without read permissions was found. As these files can't be read,
+								they will be skipped when creating the video.
 								Continue?
 								""",
 						"Unsupported file found",
