@@ -22,11 +22,7 @@ dependencies {
 }
 
 jar {
-    manifest {
-        attributes(
-                'Main-Class': 'me.timesquared.Main'
-        )
-    }
+    enabled = false
 }
 
 shadowJar {
